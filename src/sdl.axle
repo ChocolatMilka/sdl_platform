@@ -1,0 +1,149 @@
+// sdl — FFI bindings to SDL2: window/renderer/texture, the event poll,
+// keyboard and relative-mouse state, and frame timing. A host renderer draws
+// into a CPU ARGB framebuffer (see `mem`) uploaded to a streaming texture each
+// frame. Linked via the manifest: `[link] libs = ["SDL2"]`.
+//
+// The raw `SDL_*` calls are exported directly; the SDL flag constants are NOT
+// (Axle exports functions and types across a crate, not top-level consts), so
+// the few setup flags are folded into the thin `sdl*` wrapper functions at the
+// bottom — which is also a cleaner surface for dependents than a wall of flags.
+
+use crate::mem::nullPtr;
+
+@link_name("SDL_Init")             pub native fn SDL_Init(flags : i32) : i32;
+@link_name("SDL_Quit")             pub native fn SDL_Quit() : void;
+@link_name("SDL_CreateWindow")     pub native fn SDL_CreateWindow(title : string, x : i32, y : i32, w : i32, h : i32, flags : i32) : ptr;
+@link_name("SDL_DestroyWindow")    pub native fn SDL_DestroyWindow(win : ptr) : void;
+@link_name("SDL_CreateRenderer")   pub native fn SDL_CreateRenderer(win : ptr, index : i32, flags : i32) : ptr;
+@link_name("SDL_DestroyRenderer")  pub native fn SDL_DestroyRenderer(ren : ptr) : void;
+@link_name("SDL_CreateTexture")    pub native fn SDL_CreateTexture(ren : ptr, format : i32, access : i32, w : i32, h : i32) : ptr;
+@link_name("SDL_DestroyTexture")   pub native fn SDL_DestroyTexture(tex : ptr) : void;
+@link_name("SDL_UpdateTexture")    pub native fn SDL_UpdateTexture(tex : ptr, rect : ptr, pixels : ptr, pitch : i32) : i32;
+@link_name("SDL_RenderClear")      pub native fn SDL_RenderClear(ren : ptr) : i32;
+@link_name("SDL_RenderCopy")       pub native fn SDL_RenderCopy(ren : ptr, tex : ptr, src : ptr, dst : ptr) : i32;
+@link_name("SDL_RenderPresent")    pub native fn SDL_RenderPresent(ren : ptr) : void;
+@link_name("SDL_PollEvent")        pub native fn SDL_PollEvent(ev : ptr) : i32;
+@link_name("SDL_GetKeyboardState") pub native fn SDL_GetKeyboardState(numkeys : ptr) : ptr;
+@link_name("SDL_Delay")            pub native fn SDL_Delay(ms : i32) : void;
+@link_name("SDL_GetTicks")         pub native fn SDL_GetTicks() : i32;
+@link_name("SDL_SetRelativeMouseMode")  pub native fn SDL_SetRelativeMouseMode(enabled : i32) : i32;
+@link_name("SDL_GetRelativeMouseState") pub native fn SDL_GetRelativeMouseState(x : ptr, y : ptr) : i32;
+@link_name("SDL_GetMouseState")         pub native fn SDL_GetMouseState(x : ptr, y : ptr) : i32;
+@link_name("SDL_GetWindowSize")         pub native fn SDL_GetWindowSize(win : ptr, w : ptr, h : ptr) : void;
+
+// SDL ABI flag / event constants. Crate-private: consumed only by the wrapper
+// functions below, since consts don't cross the crate boundary.
+const SDL_INIT_VIDEO : i32 = 32;
+const SDL_INIT_AUDIO : i32 = 16;
+const SDL_WINDOWPOS_CENTERED : i32 = 805240832;
+const SDL_WINDOW_SHOWN : i32 = 4;
+const SDL_WINDOW_RESIZABLE : i32 = 32;
+const SDL_RENDERER_ACCEL_VSYNC : i32 = 6;
+const SDL_PIXELFORMAT_ARGB8888 : i32 = 372645892;
+const SDL_TEXTUREACCESS_STREAMING : i32 = 1;
+const SDL_QUIT : i32 = 256;
+const SDL_MOUSEWHEEL : i32 = 1027;   // event type; wheel y is i32 at offset 20
+const SDL_BUTTON_LMASK : i32 = 1;
+const SDL_BUTTON_RMASK : i32 = 4;
+
+/**
+ * Initialise SDL's video and audio subsystems.
+ * @return 0 on success (non-zero on failure, like SDL_Init)
+ */
+pub fn sdlInitVideoAudio() : i32 {
+    return SDL_Init(SDL_INIT_VIDEO + SDL_INIT_AUDIO);
+}
+
+/**
+ * Create a centred, shown, resizable window.
+ * @param title  the window title
+ * @param w      the window width in pixels
+ * @param h      the window height in pixels
+ * @return the window handle (null on failure)
+ */
+pub fn sdlCreateWindow(title : string, w : i32, h : i32) : ptr {
+    return SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        w, h, SDL_WINDOW_SHOWN + SDL_WINDOW_RESIZABLE);
+}
+
+/**
+ * Create the default hardware renderer with v-sync.
+ * @param win  the window to render into
+ * @return the renderer handle (null on failure)
+ */
+pub fn sdlCreateVsyncRenderer(win : ptr) : ptr {
+    return SDL_CreateRenderer(win, 0 - 1, SDL_RENDERER_ACCEL_VSYNC);
+}
+
+/**
+ * Create a streaming ARGB8888 texture (the CPU framebuffer upload target).
+ * @param ren  the renderer
+ * @param w    the texture width
+ * @param h    the texture height
+ * @return the texture handle (null on failure)
+ */
+pub fn sdlCreateStreamTexture(ren : ptr, w : i32, h : i32) : ptr {
+    return SDL_CreateTexture(ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, w, h);
+}
+
+/**
+ * Whether an event type is the window-close (quit) event.
+ * @param etype  the SDL event type
+ * @return true if it is SDL_QUIT
+ */
+pub fn sdlIsQuit(etype : i32) : bool {
+    return etype == SDL_QUIT;
+}
+
+/**
+ * Whether an event type is a mouse-wheel event.
+ * @param etype  the SDL event type
+ * @return true if it is SDL_MOUSEWHEEL
+ */
+pub fn sdlIsMouseWheel(etype : i32) : bool {
+    return etype == SDL_MOUSEWHEEL;
+}
+
+/**
+ * Whether the left mouse button is down in a button-state mask.
+ * @param btn  the SDL mouse button mask
+ * @return true if the left button is held
+ */
+pub fn sdlLeftHeld(btn : i32) : bool {
+    return (btn & SDL_BUTTON_LMASK) != 0;
+}
+
+/**
+ * Whether the right mouse button is down in a button-state mask.
+ * @param btn  the SDL mouse button mask
+ * @return true if the right button is held
+ */
+pub fn sdlRightHeld(btn : i32) : bool {
+    return (btn & SDL_BUTTON_RMASK) != 0;
+}
+
+/**
+ * Base pointer to SDL's keyboard state array (as i64).
+ * @return address of the keyboard state buffer
+ */
+pub fn keyboardBase() : i64 {
+    unsafe {
+        return SDL_GetKeyboardState(nullPtr()) as i64;
+    }
+}
+
+/**
+ * Milliseconds since SDL_Init — for frame timing.
+ * @return milliseconds elapsed since SDL_Init
+ */
+pub fn ticks() : i32 {
+    return SDL_GetTicks();
+}
+
+/**
+ * Sleep `ms` milliseconds (yields the CPU).
+ * @param ms  number of milliseconds to sleep
+ */
+pub fn delay(ms : i32) : void {
+    SDL_Delay(ms);
+}

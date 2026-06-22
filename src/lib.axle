@@ -1,0 +1,16 @@
+// lib — crate entry for sdl_platform. A library crate has no `main`; this file
+// just anchors the build (the manifest's `entry`) and pulls every module into
+// the compile closure. Dependents reach exported items directly as
+// `use sdl_platform::Symbol;` — Axle flattens a crate's `pub` functions and
+// types to the crate root, so no re-export list is needed (and `pub use` is not
+// a thing). The public surface, by module:
+//
+//   sdl    — SDL_* raw calls, the `sdl*` setup wrappers, keyboardBase/ticks/delay
+//   mem    — nullPtr/asPtr/isNull/allocBytes/cfree, the typed buffer accessors, rgb
+//   file   — readFile / fileExists / loadAtlas
+//   audio  — Clip / Mixer / SoundBank
+
+use crate::sdl::SDL_Init;
+use crate::mem::rgb;
+use crate::file::loadAtlas;
+use crate::audio::Mixer;
