@@ -1,0 +1,10 @@
+# Syntax highlighting on GitHub / Gitea (github-linguist)
+#
+# Linguist cannot be taught the Axle language from inside a repo, so map .axle to
+# Rust — the closest supported grammar (fn / let / mut / pub / dyn / trait /
+# struct / enum / use / match / self / as / is and //, ///, /** */ comments all
+# highlight; only `class` / `constructor` are missed). This colours .axle blobs
+# on the crate's GitHub page.
+#
+# Flip `linguist-detectable=true` to false to keep .axle out of the language bar.
+*.axle linguist-language=Rust linguist-detectable=true
