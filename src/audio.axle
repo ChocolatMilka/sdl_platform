@@ -49,9 +49,9 @@ pub class Clip {
      * @param path  the .wav file to load
      */
     constructor(path : string) {
-        this.buf = 0;
-        this.samples = 0;
-        this.ok = 0;
+        self.buf = 0;
+        self.samples = 0;
+        self.ok = 0;
         let spec : i64 = allocBytes(64);
         let bufpp : i64 = allocBytes(8);
         let lenp : i64 = allocBytes(8);
@@ -63,17 +63,17 @@ pub class Clip {
         if (isNull(res)) {
             return;
         }
-        this.buf = readI64(bufpp, 0);
-        this.samples = readI32(lenp, 0) / 2;
-        this.ok = 1;
+        self.buf = readI64(bufpp, 0);
+        self.samples = readI32(lenp, 0) / 2;
+        self.ok = 1;
     }
 
     /**
      * Whether the clip decoded successfully.
      * @return true if the clip is playable
      */
-    fn loaded() : bool {
-        return this.ok == 1;
+    fn loaded(self) : bool {
+        return self.ok == 1;
     }
 }
 
@@ -99,29 +99,29 @@ pub class Mixer {
 
     /** Open the single 44.1 kHz mono S16 device and clear the voice pool. */
     constructor() {
-        this.dev = 0;
-        this.ok = 0;
-        this.vN = MAX_VOICES;
-        this.vbuf = malloc<i64>(MAX_VOICES);
-        this.vlen = malloc<i32>(MAX_VOICES);
-        this.vcur = malloc<i32>(MAX_VOICES);
-        this.vbase = malloc<f64>(MAX_VOICES);
-        this.vpf = malloc<i32>(MAX_VOICES);
-        this.vpx = malloc<f64>(MAX_VOICES);
-        this.vpy = malloc<f64>(MAX_VOICES);
-        this.vpz = malloc<f64>(MAX_VOICES);
-        this.vmax = malloc<f64>(MAX_VOICES);
-        this.vact = malloc<i32>(MAX_VOICES);
-        this.vblk = malloc<i32>(MAX_VOICES);
+        self.dev = 0;
+        self.ok = 0;
+        self.vN = MAX_VOICES;
+        self.vbuf = malloc<i64>(MAX_VOICES);
+        self.vlen = malloc<i32>(MAX_VOICES);
+        self.vcur = malloc<i32>(MAX_VOICES);
+        self.vbase = malloc<f64>(MAX_VOICES);
+        self.vpf = malloc<i32>(MAX_VOICES);
+        self.vpx = malloc<f64>(MAX_VOICES);
+        self.vpy = malloc<f64>(MAX_VOICES);
+        self.vpz = malloc<f64>(MAX_VOICES);
+        self.vmax = malloc<f64>(MAX_VOICES);
+        self.vact = malloc<i32>(MAX_VOICES);
+        self.vblk = malloc<i32>(MAX_VOICES);
         let i : i32 = 0;
-        while (i < this.vN) {
-            this.vact[i] = 0;
+        while (i < self.vN) {
+            self.vact[i] = 0;
             i = i + 1;
         }
-        this.lx = 0.0;
-        this.ly = 0.0;
-        this.lz = 0.0;
-        this.out = allocBytes((QUEUE_BURST as i64) * 2);
+        self.lx = 0.0;
+        self.ly = 0.0;
+        self.lz = 0.0;
+        self.out = allocBytes((QUEUE_BURST as i64) * 2);
 
         // Desired SDL_AudioSpec: freq@0, format@4 (AUDIO_S16LSB=0x8010),
         // channels@6, samples@8; callback (offset 16) left NULL → queued audio.
@@ -139,9 +139,9 @@ pub class Mixer {
         if (d == 0) {
             return;
         }
-        this.dev = d;
+        self.dev = d;
         SDL_PauseAudioDevice(d, 0);
-        this.ok = 1;
+        self.ok = 1;
     }
 
     /**
@@ -151,20 +151,20 @@ pub class Mixer {
      * @param y  listener y
      * @param z  listener z
      */
-    fn setListener(x : f64, y : f64, z : f64) : void {
-        this.lx = x;
-        this.ly = y;
-        this.lz = z;
+    fn setListener(mut self, x : f64, y : f64, z : f64) : void {
+        self.lx = x;
+        self.ly = y;
+        self.lz = z;
     }
 
     /**
      * Reserve a voice slot (a free one, or slot 0 if all are busy).
      * @return the slot index
      */
-    fn allocVoice() : i32 {
+    fn allocVoice(self) : i32 {
         let i : i32 = 0;
-        while (i < this.vN) {
-            if (this.vact[i] == 0) {
+        while (i < self.vN) {
+            if (self.vact[i] == 0) {
                 return i;
             }
             i = i + 1;
@@ -178,17 +178,17 @@ pub class Mixer {
      * @param samples  the clip's sample count
      * @param gain     playback gain in [0, 1]
      */
-    fn play(buf : i64, samples : i32, gain : f64) : void {
-        if (this.ok == 0 || buf == 0 || samples <= 0 || gain <= 0.0) {
+    fn play(mut self, buf : i64, samples : i32, gain : f64) : void {
+        if (self.ok == 0 || buf == 0 || samples <= 0 || gain <= 0.0) {
             return;
         }
-        let s : i32 = this.allocVoice();
-        this.vbuf[s] = buf;
-        this.vlen[s] = samples;
-        this.vcur[s] = 0;
-        this.vbase[s] = gain;
-        this.vpf[s] = 0;
-        this.vact[s] = 1;
+        let s : i32 = self.allocVoice();
+        self.vbuf[s] = buf;
+        self.vlen[s] = samples;
+        self.vcur[s] = 0;
+        self.vbase[s] = gain;
+        self.vpf[s] = 0;
+        self.vact[s] = 1;
     }
 
     /**
@@ -202,21 +202,21 @@ pub class Mixer {
      * @param pz       source world z
      * @param maxDist  audible range in blocks
      */
-    fn playPos(buf : i64, samples : i32, gain : f64, px : f64, py : f64, pz : f64, maxDist : f64) : void {
-        if (this.ok == 0 || buf == 0 || samples <= 0 || gain <= 0.0) {
+    fn playPos(mut self, buf : i64, samples : i32, gain : f64, px : f64, py : f64, pz : f64, maxDist : f64) : void {
+        if (self.ok == 0 || buf == 0 || samples <= 0 || gain <= 0.0) {
             return;
         }
-        let s : i32 = this.allocVoice();
-        this.vbuf[s] = buf;
-        this.vlen[s] = samples;
-        this.vcur[s] = 0;
-        this.vbase[s] = gain;
-        this.vpf[s] = 1;
-        this.vpx[s] = px;
-        this.vpy[s] = py;
-        this.vpz[s] = pz;
-        this.vmax[s] = maxDist;
-        this.vact[s] = 1;
+        let s : i32 = self.allocVoice();
+        self.vbuf[s] = buf;
+        self.vlen[s] = samples;
+        self.vcur[s] = 0;
+        self.vbase[s] = gain;
+        self.vpf[s] = 1;
+        self.vpx[s] = px;
+        self.vpy[s] = py;
+        self.vpz[s] = pz;
+        self.vmax[s] = maxDist;
+        self.vact[s] = 1;
     }
 
     /**
@@ -225,14 +225,14 @@ pub class Mixer {
      * @param v  the voice index
      * @return the fixed-point volume in [0, 256]
      */
-    fn voiceVol(v : i32) : i32 {
-        let g : f64 = this.vbase[v];
-        if (this.vpf[v] == 1) {
-            let dx : f64 = this.vpx[v] - this.lx;
-            let dy : f64 = this.vpy[v] - this.ly;
-            let dz : f64 = this.vpz[v] - this.lz;
+    fn voiceVol(self, v : i32) : i32 {
+        let g : f64 = self.vbase[v];
+        if (self.vpf[v] == 1) {
+            let dx : f64 = self.vpx[v] - self.lx;
+            let dy : f64 = self.vpy[v] - self.ly;
+            let dz : f64 = self.vpz[v] - self.lz;
             let d : f64 = Math::sqrt(dx * dx + dy * dy + dz * dz);
-            let mx : f64 = this.vmax[v];
+            let mx : f64 = self.vmax[v];
             if (d >= mx) {
                 return 0;
             }
@@ -254,11 +254,11 @@ pub class Mixer {
      * voice (at its current attenuated gain) into the freshly generated block.
      * Call once per frame, after setListener.
      */
-    fn pump() : void {
-        if (this.ok == 0) {
+    fn pump(mut self) : void {
+        if (self.ok == 0) {
             return;
         }
-        let queued : i32 = SDL_GetQueuedAudioSize(this.dev) / 2;
+        let queued : i32 = SDL_GetQueuedAudioSize(self.dev) / 2;
         let need : i32 = QUEUE_TARGET - queued;
         if (need <= 0) {
             return;
@@ -268,9 +268,9 @@ pub class Mixer {
         }
         // Resolve each voice's volume once for this block (reused scratch).
         let k : i32 = 0;
-        while (k < this.vN) {
-            if (this.vact[k] == 1) {
-                this.vblk[k] = this.voiceVol(k);
+        while (k < self.vN) {
+            if (self.vact[k] == 1) {
+                self.vblk[k] = self.voiceVol(k);
             }
             k = k + 1;
         }
@@ -278,13 +278,13 @@ pub class Mixer {
         while (s < need) {
             let acc : i32 = 0;
             let v : i32 = 0;
-            while (v < this.vN) {
-                if (this.vact[v] == 1) {
-                    let smp : i32 = readI16(this.vbuf[v], (this.vcur[v] as i64) * 2);
-                    acc = acc + smp * this.vblk[v] / 256;
-                    this.vcur[v] = this.vcur[v] + 1;
-                    if (this.vcur[v] >= this.vlen[v]) {
-                        this.vact[v] = 0;
+            while (v < self.vN) {
+                if (self.vact[v] == 1) {
+                    let smp : i32 = readI16(self.vbuf[v], (self.vcur[v] as i64) * 2);
+                    acc = acc + smp * self.vblk[v] / 256;
+                    self.vcur[v] = self.vcur[v] + 1;
+                    if (self.vcur[v] >= self.vlen[v]) {
+                        self.vact[v] = 0;
                     }
                 }
                 v = v + 1;
@@ -295,10 +295,10 @@ pub class Mixer {
             if (acc < 0 - 32768) {
                 acc = 0 - 32768;
             }
-            writeI16(this.out, (s as i64) * 2, acc);
+            writeI16(self.out, (s as i64) * 2, acc);
             s = s + 1;
         }
-        SDL_QueueAudio(this.dev, asPtr(this.out), need * 2);
+        SDL_QueueAudio(self.dev, asPtr(self.out), need * 2);
     }
 }
 
@@ -313,41 +313,41 @@ pub class SoundBank {
      * @param cap  maximum number of variants
      */
     constructor(cap : i32) {
-        this.clips = malloc<Clip>(cap);
-        this.n = 0;
-        this.cap = cap;
+        self.clips = malloc<Clip>(cap);
+        self.n = 0;
+        self.cap = cap;
     }
 
     /**
      * Decode and append one variant (missing files are skipped silently).
      * @param path  the .wav file to add
      */
-    fn add(path : string) : void {
-        if (this.n >= this.cap) {
+    fn add(mut self, path : string) : void {
+        if (self.n >= self.cap) {
             return;
         }
         let c : Clip = new Clip(path);
         if (!c.loaded()) {
             return;
         }
-        this.clips[this.n] = c;
-        this.n = this.n + 1;
+        self.clips[self.n] = c;
+        self.n = self.n + 1;
     }
 
     /**
      * Whether at least one variant loaded.
      * @return true if playable
      */
-    fn loaded() : bool {
-        return this.n > 0;
+    fn loaded(self) : bool {
+        return self.n > 0;
     }
 
     /**
      * Number of loaded variants.
      * @return the variant count
      */
-    fn count() : i32 {
-        return this.n;
+    fn count(self) : i32 {
+        return self.n;
     }
 
     /**
@@ -355,13 +355,13 @@ pub class SoundBank {
      * @param rnd  selector in [0, 1)
      * @return the variant index, or -1
      */
-    fn pick(rnd : f64) : i32 {
-        if (this.n <= 0) {
+    fn pick(self, rnd : f64) : i32 {
+        if (self.n <= 0) {
             return 0 - 1;
         }
-        let i : i32 = Math::floorToInt(rnd * (this.n as f64)) as i32;
-        if (i >= this.n) {
-            i = this.n - 1;
+        let i : i32 = Math::floorToInt(rnd * (self.n as f64)) as i32;
+        if (i >= self.n) {
+            i = self.n - 1;
         }
         if (i < 0) {
             i = 0;
@@ -375,12 +375,12 @@ pub class SoundBank {
      * @param rnd    selector in [0, 1)
      * @param gain   playback gain in [0, 1]
      */
-    fn playRand(mixer : Mixer, rnd : f64, gain : f64) : void {
-        let i : i32 = this.pick(rnd);
+    fn playRand(self, mixer : Mixer, rnd : f64, gain : f64) : void {
+        let i : i32 = self.pick(rnd);
         if (i < 0) {
             return;
         }
-        let c : Clip = this.clips[i];
+        let c : Clip = self.clips[i];
         mixer.play(c.buf, c.samples, gain);
     }
 
@@ -395,12 +395,12 @@ pub class SoundBank {
      * @param pz       source world z
      * @param maxDist  audible range in blocks
      */
-    fn playRandPos(mixer : Mixer, rnd : f64, gain : f64, px : f64, py : f64, pz : f64, maxDist : f64) : void {
-        let i : i32 = this.pick(rnd);
+    fn playRandPos(self, mixer : Mixer, rnd : f64, gain : f64, px : f64, py : f64, pz : f64, maxDist : f64) : void {
+        let i : i32 = self.pick(rnd);
         if (i < 0) {
             return;
         }
-        let c : Clip = this.clips[i];
+        let c : Clip = self.clips[i];
         mixer.playPos(c.buf, c.samples, gain, px, py, pz, maxDist);
     }
 }
