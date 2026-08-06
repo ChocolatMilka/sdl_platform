@@ -8,7 +8,7 @@ Window, renderer & streaming texture · event poll · keyboard + relative-mouse 
 
 <p align="center">
   <a href="https://axle-lang.dev"><img alt="Powered by Axle" src="https://img.shields.io/badge/powered%20by-Axle-5B4BE1?style=for-the-badge&labelColor=1b1b2b"></a>
-  <a href="https://axle-lang.dev"><img alt="Axle 0.4.4+" src="https://img.shields.io/badge/axle-0.4.4%2B-5B4BE1?style=for-the-badge&labelColor=1b1b2b"></a>
+  <a href="https://axle-lang.dev"><img alt="Axle 0.7.0+" src="https://img.shields.io/badge/axle-0.7.0%2B-5B4BE1?style=for-the-badge&labelColor=1b1b2b"></a>
 </p>
 <p align="center">
   <img alt="SDL2" src="https://img.shields.io/badge/backend-SDL2-1D6FB8?style=flat-square&labelColor=1b1b2b">
@@ -21,7 +21,7 @@ Window, renderer & streaming texture · event poll · keyboard + relative-mouse 
 
 Extracted from the [`voxel-axle`](../..) game so the SDL/libc bindings live once and can be reused by any Axle project that needs a window, input, audio and raw memory. Its `src/` compiles **together** with the consuming crate — no C shim, no build script — you just `use sdl_platform::…`.
 
-Requires **[Axle](https://axle-lang.dev) v0.4.4+**.
+Requires **[Axle](https://axle-lang.dev) v0.7.0+**.
 
 ## 📚 Modules (public surface)
 
